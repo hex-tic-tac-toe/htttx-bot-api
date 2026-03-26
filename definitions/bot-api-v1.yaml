@@ -45,12 +45,23 @@ components:
         description:
           description: Optional human readable description of the bot.
           type: string
-        author:
-          description: Optional name or username of the Author of the bot.
-          type: string
+        authors:
+          description: Optional names or usernames of the Authors of the bot.
+          type: array
+          items:
+            type: string
         version:
           description: Optional version of the bot. Semantic versioning is preferred, but not required.
           type: string
+        tags:
+          description: |
+            Optional array of tags related to the bot, should exclusively include short, non-empty lower case tags.
+            Each tag should only use lower-case alphanumeric characters, and short dash. 
+            For example, the tags can include the algorithms used, such as "minimax", "machine-learning", "ab-pruning" etc
+          type: array
+          items:
+            type: string
+            pattern: "^[a-z0-9-]+$"
 
     StatelessCapability:
       description: Whether this bot can run answer stateless http move requests.
