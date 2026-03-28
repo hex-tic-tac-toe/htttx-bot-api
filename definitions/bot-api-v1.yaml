@@ -56,7 +56,7 @@ components:
         tags:
           description: |
             Optional array of tags related to the bot, should exclusively include short, non-empty lower case tags.
-            Each tag should only use lower-case alphanumeric characters, and short dash. 
+            Each tag should only use lower-case alphanumeric characters, and short dash.
             For example, the tags can include the algorithms used, such as "minimax", "machine-learning", "ab-pruning" etc
           type: array
           items:
@@ -140,13 +140,13 @@ components:
                 move_time_limit:
                   type: boolean
                   description: | 
-                    If this property is true, the bot must support and respect time_limit field of 
+                    If this property is true, the bot must support and respect move_time_limit field of 
                     the move request packet.
                 
                 evaluation_time_limit:
                   type: boolean
                   description: | 
-                    If this property is true, the bot must support and respect time_limit field of
+                    If this property is true, the bot must support and respect evaluation_time_limit field of
                     the evaluation request packet. Meaningless if the bot does not support "evaluation".
 
                 config:
@@ -206,7 +206,7 @@ components:
                     if this property is true, the client may send a game setup packet at any point.
                     Otherwise the setup packet may only be sent once, before requesting any moves or evaluations.
                 
-                interruptable:
+                interruptible:
                   type: boolean
                   description: |
                     If this property is true, the client may send an interrupt packet at any point, to request the bot

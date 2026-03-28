@@ -184,6 +184,11 @@ components:
             it may only request moves and evaluations with cross to move).
           type: string
           enum: ['x', 'o']
+        evaluation_time_limit:
+          description: | 
+            Optional time limit in seconds for the bot to make an evaluation.
+            If "basic_websocket.v1-alpha.evaluation_time_limit" is true in the bot's capabilities.json, the client may
+            terminate the connection after this amount of time has passed, if the bot didn't respond.
     
     EvaluationResponsePacket:
       description: |
