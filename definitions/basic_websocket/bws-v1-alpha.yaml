@@ -289,10 +289,9 @@ components:
           - a response that does not echo the outstanding request_id (see
             MoveRequestPacket.request_id).
 
-        An illegal move is terminal: the game ends. This API does not define the
-        result, winner, or finishReason; the play layer owns those. This is a platform
-        requirement, not current behavior: a server today rejects an illegal move
-        without ending the game and keeps the socket open.
+        On an illegal move a server MAY drop the connection and SHOULD NOT apply the
+        move. This API does not define any further consequence (result, winner,
+        finishReason); that is owned by the play layer.
       type: object
       required:
         - pieces
@@ -378,16 +377,6 @@ components:
         the win conditions.
       type: object
       properties:
-        to_move:
-          description: |
-            Which side is to move, consistent with the stateless Board. The board
-            appears here only in a setup packet, so to_move states the default side to
-            move at that position. MoveRequestPacket.side is authoritative per requested
-            move; to_move is advisory once free_move_order or dual_sided is in effect
-            (those let the client request either side). Otherwise to_move and the side
-            of the first move requested from this position must agree.
-          type: string
-          enum: ["x", "o"]
         cells:
           type: array
           items:
@@ -406,11 +395,9 @@ components:
               - r
               - p
       required:
-        - to_move
         - cells
       examples:
-        - to_move: "o"
-          cells:
+        - cells:
             - q: 0
               r: 0
               p: "x"

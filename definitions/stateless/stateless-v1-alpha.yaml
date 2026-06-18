@@ -105,10 +105,9 @@ components:
           - a placement for the wrong side or out of turn;
           - a placement after the game is won.
 
-        An illegal move is terminal: the game ends. This API does not define the
-        result, winner, or finishReason; the play layer owns those. This is a platform
-        requirement, not current behavior: a server today rejects an illegal move
-        without ending the game.
+        On an illegal move a server MAY reject it and SHOULD NOT apply it. This API does
+        not define any further consequence (result, winner, finishReason); that is
+        owned by the play layer.
       type: object
       properties:
         pieces:
