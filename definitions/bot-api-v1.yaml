@@ -106,6 +106,12 @@ components:
                   type: boolean
                   description: If this property is true, bot must support and respect time_limit field of move request.
 
+                request_id:
+                  type: boolean
+                  description: |
+                    If this property is true, the bot echoes the request_id field of the move request on its response.
+                    request_id is optional either way: the http request/response pair already correlates the answer.
+
 
     BasicWebsocketCapability:
       description: Whether this bot supports real-time play via a bot-side websocket.

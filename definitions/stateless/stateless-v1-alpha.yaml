@@ -144,12 +144,11 @@ components:
           minimum: 0
         request_id:
           description: |
-            Optional identifier of this request, echoed unchanged on the response
-            (see MoveResponse). The stateless transport answers each request on its
-            own http response, and each request carries the full board, so request
-            and response are already matched by the http transaction; a request_id is
-            not required here. When the client supplies one, the bot must echo it so
-            the client can double-check the pairing.
+            Optional identifier of this request, echoed unchanged on the response. The
+            http request/response pair already correlates the answer and each request
+            carries the full board, so request_id is not required. If the bot sets
+            "stateless.v1-alpha.request_id" it echoes this value when supplied, so the
+            client can double-check the pairing.
           type: integer
           minimum: 0
       required:
@@ -178,8 +177,8 @@ components:
             $ref: "#/components/schemas/Move"
         request_id:
           description: |
-            Present only if the request carried a request_id, copied unchanged from
-            MoveRequest.request_id.
+            The request_id of the move request, echoed unchanged when the request
+            carried one (see "stateless.v1-alpha.request_id").
           type: integer
           minimum: 0
       required:
