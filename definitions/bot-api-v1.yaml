@@ -26,6 +26,7 @@ components:
       description: | 
         Versioned capabilities of the bot. Should only include the capabilities that the bot fully supports.
         Optional "meta" field is not a capability, but an object containing information about the bot.
+        Optional "matchmaking" field is not a play transport, but an eligibility declaration for ladder use.
       type: object
       properties:
         meta:
@@ -34,6 +35,8 @@ components:
           $ref: "#/components/schemas/StatelessCapability"
         basic_websocket:
           $ref: "#/components/schemas/BasicWebsocketCapability"
+        matchmaking:
+          $ref: "#/components/schemas/MatchmakingCapability"
 
     Meta:
       description: Meta information about the bot. A bot may define any number of any additional fields not defined here.
@@ -212,3 +215,42 @@ components:
                     If this property is true, the client may send an interrupt packet at any point, to request the bot
                     to stop evaluation and ignore the last move request packet, including its "previous" field
                     containing the applied moves.
+
+    MatchmakingCapability:
+      description: |
+        Engine-eligibility marker for ladder / matchmaking use. Its presence declares
+        the engine is eligible as a ladder bot.
+
+        It is a label only, carrying engine-eligibility facts (for example whether the
+        engine honors a per-move time limit). It is never a rating, strength, or
+        pairing input. Time-control modes, pairing, rating, and scheduling are
+        play-layer concerns, not declared here.
+
+        A bot declaring matchmaking eligibility must also advertise a play transport
+        ("stateless" or "basic_websocket"); this block does not provide a way to play.
+      type: object
+      required:
+        - versions
+      properties:
+        versions:
+          description: |
+            Versions of the matchmaking eligibility declaration the bot supports.
+            If it is an empty object, the bot declares no matchmaking eligibility.
+          type: object
+          properties:
+            v1-alpha:
+              type: object
+              description: |
+                If this property is set, the bot declares matchmaking eligibility
+                under v1-alpha of this declaration.
+              properties:
+                honors_move_time_limit:
+                  description: |
+                    If true, the engine honors a per-move time limit. For it to take
+                    effect, the bot must also set "move_time_limit" on the play
+                    transport it advertises. Eligibility label only.
+                  type: boolean
+      examples:
+        - versions:
+            v1-alpha:
+              honors_move_time_limit: true
