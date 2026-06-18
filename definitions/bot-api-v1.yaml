@@ -24,8 +24,11 @@ components:
   schemas:
     Capabilities:
       description: | 
-        Versioned capabilities of the bot. Should only include the capabilities that the bot fully supports.
-        Optional "meta" field is not a capability, but an object containing information about the bot.
+        Versioned capabilities of the bot. A capability is a set of features the bot
+        implements; only include the ones the bot fully supports. A capability may
+        carry a way to play (stateless, basic_websocket), declare eligibility
+        (matchmaking), or gate optional behavior. The optional "meta" field is not a
+        capability, just information about the bot.
       type: object
       properties:
         meta:
@@ -34,6 +37,8 @@ components:
           $ref: "#/components/schemas/StatelessCapability"
         basic_websocket:
           $ref: "#/components/schemas/BasicWebsocketCapability"
+        matchmaking:
+          $ref: "#/components/schemas/MatchmakingCapability"
 
     Meta:
       description: Meta information about the bot. A bot may define any number of any additional fields not defined here.
@@ -100,6 +105,12 @@ components:
                 move_time_limit:
                   type: boolean
                   description: If this property is true, bot must support and respect time_limit field of move request.
+
+                request_id:
+                  type: boolean
+                  description: |
+                    If this property is true, the bot echoes the request_id field of the move request on its response.
+                    request_id is optional either way: the http request/response pair already correlates the answer.
 
 
     BasicWebsocketCapability:
@@ -212,3 +223,49 @@ components:
                     If this property is true, the client may send an interrupt packet at any point, to request the bot
                     to stop evaluation and ignore the last move request packet, including its "previous" field
                     containing the applied moves.
+
+                request_id:
+                  type: boolean
+                  description: |
+                    If this property is true, the bot supports request_id answer-matching on the move packets.
+                    When set, and the client uses request_ids, every move_request carries a request_id that the bot
+                    must echo on its move_response, and an interrupt may name the request_id it cancels.
+                    When unset, request_id is optional and answers are matched by the transport's request/response ordering.
+
+    MatchmakingCapability:
+      description: |
+        Signals that the bot is offered for competitive (ranked) play. Its presence is
+        an eligibility marker, and it can gate behaviors the matchmaker requires (for
+        example honoring a per-move time limit). It is never a rating, strength, or
+        pairing input; pairing, rating, scheduling, and time-control selection are
+        play-layer concerns, not declared here.
+
+        Matchmaking carries no gameplay of its own, so a bot declaring it must also
+        support a gameplay capability ("stateless" or "basic_websocket").
+      type: object
+      required:
+        - versions
+      properties:
+        versions:
+          description: |
+            Versions of the matchmaking eligibility declaration the bot supports.
+            If it is an empty object, the bot declares no matchmaking eligibility.
+          type: object
+          properties:
+            v1-alpha:
+              type: object
+              description: |
+                If this property is set, the bot declares matchmaking eligibility
+                under v1-alpha of this declaration.
+              properties:
+                honors_move_time_limit:
+                  description: |
+                    If true, the engine honors a per-move time limit. For it to take
+                    effect, the bot must also set "move_time_limit" on the gameplay
+                    capability it supports ("stateless" or "basic_websocket").
+                    Eligibility label only.
+                  type: boolean
+      examples:
+        - versions:
+            v1-alpha:
+              honors_move_time_limit: true

@@ -73,8 +73,8 @@ components:
 
     GameSetupPacket:
       description: |
-        A packet sent from the client to the bot before any moves are requested, and during the.
-        Contains the state of the board. The bot should The bot should not do any evaluation of the position until 
+        A packet sent from the client to the bot before any moves are requested.
+        Contains the state of the board. The bot should not do any evaluation of the position until
         the first move, or evaluation is requested by the client.
         Unless "basic_websocket.v1-alpha.resettable_state" is true in capabilities.json, this packet may only be sent
         once, before the first move or evaluation is requested. Upon receiving any extra setup packet, the bot may
@@ -133,10 +133,38 @@ components:
           items:
             $ref: "#/components/schemas/Move"
         move_time_limit:
-          description: | 
+          description: |
             Optional time limit in seconds for the bot to make a move.
             If "basic_websocket.v1-alpha.move_time_limit" is true in the bot's capabilities.json, the client may terminate
             the connection after this amount of time has passed, if the bot didn't respond.
+          type: number
+          minimum: 0
+        request_id:
+          description: |
+            Optional identifier of this move request, assigned by the client. Used for
+            answer-matching when the bot sets "basic_websocket.v1-alpha.request_id" and
+            the client supplies it; otherwise answers are matched by the transport's own
+            request/response ordering.
+
+            When used: the value is strictly increasing within the session, and at most
+            one move request is outstanding at a time (the client sends the next only
+            after the current is answered, interrupted, or abandoned). The bot must echo
+            it unchanged on the answering move_response. The outstanding request is the
+            one sent and not yet answered or invalidated (by the next move request, an
+            interrupt, or a game setup packet); the client discards, and does not apply,
+            any move_response whose id is not the outstanding one.
+
+            request_ids are scoped to one connection: a new connection starts a fresh id
+            space, so an answer from an earlier connection cannot match. A bot may reuse
+            cached evaluation across reconnections but must never reuse or honor an id
+            across connections.
+          type: integer
+          minimum: 0
+      examples:
+        - type: move_request
+          side: "o"
+          previous: []
+          request_id: 1
 
     MoveResponsePacket:
       description: |
@@ -161,6 +189,23 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MoveOption"
+        request_id:
+          description: |
+            The request_id of the move request this response answers, echoed unchanged.
+            Present when the request carried one (see
+            "basic_websocket.v1-alpha.request_id"). A response that does not echo the
+            outstanding request_id is discarded and not applied to the board.
+          type: integer
+          minimum: 0
+      examples:
+        - type: move_response
+          move:
+            pieces:
+              - q: 1
+                r: 0
+              - q: -1
+                r: 1
+          request_id: 1
 
     EvaluationRequestPacket:
       description: |
@@ -189,6 +234,8 @@ components:
             Optional time limit in seconds for the bot to make an evaluation.
             If "basic_websocket.v1-alpha.evaluation_time_limit" is true in the bot's capabilities.json, the client may
             terminate the connection after this amount of time has passed, if the bot didn't respond.
+          type: number
+          minimum: 0
     
     EvaluationResponsePacket:
       description: |
@@ -205,22 +252,68 @@ components:
         evaluation:
           $ref: "#/components/schemas/PositionEvaluation"
 
+    InterruptPacket:
+      description: |
+        Sent by the client to a bot that declares
+        "basic_websocket.v1-alpha.interruptible", asking it to stop evaluating and drop
+        the outstanding move request (including the moves in "previous"). After an
+        interrupt the bot must not answer that request; a late answer is matched as
+        out-of-id and discarded.
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          const: interrupt
+        request_id:
+          description: |
+            Optional request_id of the move request being interrupted, when
+            "basic_websocket.v1-alpha.request_id" is in use.
+          type: integer
+          minimum: 0
+      examples:
+        - type: interrupt
+
     MoveOption:
       description: |
-        A single complete move a bot has evaluated, consisting of placing 2 pieces on the board.
-        If evaluation is provided, it must be of the board state after this move would be applied to it.
+        A single complete move a bot has evaluated, of two placements. If evaluation
+        is provided, it must be of the board after this move is applied.
+
+        The move must be legal; the platform detects an illegal move from the response
+        against the board, the turn, and the outstanding request. A move is illegal if
+        it has:
+          - the wrong number of placements for the turn;
+          - a placement on an occupied cell;
+          - a placement out of range (after the origin, beyond the placement radius of
+            every placed cell);
+          - a first placement not at the origin (0, 0);
+          - a placement for the wrong side or out of turn;
+          - a placement after the game is won;
+          - a response that does not echo the outstanding request_id (see
+            MoveRequestPacket.request_id).
+
+        On an illegal move a server MAY drop the connection and SHOULD NOT apply the
+        move. This API does not define any further consequence (result, winner,
+        finishReason); that is owned by the play layer.
       type: object
       required:
         - pieces
       properties:
         pieces:
           type: array
-          items: 
+          items:
             $ref: "#/components/schemas/Coord"
-          minLength: 2
-          maxLength: 2
+          minItems: 2
+          maxItems: 2
         evaluation:
           $ref: "#/components/schemas/PositionEvaluation"
+      examples:
+        - pieces:
+            - q: 1
+              r: 0
+            - q: -1
+              r: 1
 
     PositionEvaluation:
       description: |
@@ -237,15 +330,15 @@ components:
           type: number
         win_in:
           description: |
-            Should be used when the bot found (or assumes there to be) a win for one of the sides in N moves.
+            Should be used when the bot found (or assumes there to be) a win for one of the sides in N turns.
             If the win is found for crosses, N should be positive. If it is found for circles, N should be negated.
-            One move is assumed to be 2 crosses, or 2 circles placed. For example position oooo.oooo, cross to move,
-            would have a "win_in" value of -2. Move 1 would be cross's move, and move 2 is the winning move of circles.
+            A turn is two placements. For example position oooo.oooo, cross to move,
+            would have a "win_in" value of -2. Turn 1 would be cross's turn, and turn 2 is the winning turn of circles.
           type: integer
 
     Move:
       description: |
-        A single complete move of the game, consisting of placing 2 pieces on the board.
+        A single complete move of the game, of two placements.
       type: object
       required:
         - side
@@ -256,10 +349,17 @@ components:
           enum: ['x', 'o']
         pieces:
           type: array
-          items: 
+          items:
             $ref: "#/components/schemas/Coord"
-          minLength: 2
-          maxLength: 2
+          minItems: 2
+          maxItems: 2
+      examples:
+        - side: "o"
+          pieces:
+            - q: 1
+              r: 0
+            - q: -1
+              r: 1
 
     Coord:
       description: Axial hex-coordinate. +q goes right, +r goes top-right.
@@ -300,3 +400,8 @@ components:
               - p
       required:
         - cells
+      examples:
+        - cells:
+            - q: 0
+              r: 0
+              p: "x"

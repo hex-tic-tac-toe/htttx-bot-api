@@ -85,24 +85,47 @@ components:
           type: number
         win_in:
           description: |
-            Should be used when the bot found (or assumes there to be) a win for one of the sides in N moves.
+            Should be used when the bot found (or assumes there to be) a win for one of the sides in N turns.
             If the win is found for crosses, N should be positive. If it is found for circles, N should be negated.
-            One move is assumed to be 2 crosses, or 2 circles placed. For example position oooo.oooo, cross to move,
-            would have a "win_in" value of -2. Move 1 would be cross's move, and move 2 is the winning move of circles.
+            A turn is two placements. For example position oooo.oooo, cross to move,
+            would have a "win_in" value of -2. Turn 1 would be cross's turn, and turn 2 is the winning turn of circles.
           type: integer
 
     Move:
-      description: A single move, consisting of placing 2 pieces.
+      description: |
+        A single move of two placements.
+
+        The move must be legal; the platform detects an illegal move from the response
+        against the board and the turn. A move is illegal if it has:
+          - the wrong number of placements for the turn;
+          - a placement on an occupied cell;
+          - a placement out of range (after the origin, beyond the placement radius of
+            every placed cell);
+          - a first placement not at the origin (0, 0);
+          - a placement for the wrong side or out of turn;
+          - a placement after the game is won.
+
+        On an illegal move a server MAY reject it and SHOULD NOT apply it. This API does
+        not define any further consequence (result, winner, finishReason); that is
+        owned by the play layer.
       type: object
       properties:
         pieces:
           type: array
-          items: 
+          items:
             $ref: "#/components/schemas/Coord"
+          minItems: 2
+          maxItems: 2
         evaluation:
           $ref: "#/components/schemas/PositionEvaluation"
       required:
         - pieces
+      examples:
+        - pieces:
+            - q: 1
+              r: 0
+            - q: -1
+              r: 1
 
     MoveRequest:
       description: A request for the bot to evaluate the position and make a move.
@@ -119,8 +142,26 @@ components:
             In this case, it is assumed that the thinking time is unlimited.
           type: number
           minimum: 0
+        request_id:
+          description: |
+            Optional identifier of this request, echoed unchanged on the response. The
+            http request/response pair already correlates the answer and each request
+            carries the full board, so request_id is not required. If the bot sets
+            "stateless.v1-alpha.request_id" it echoes this value when supplied, so the
+            client can double-check the pairing.
+          type: integer
+          minimum: 0
       required:
         - board
+      examples:
+        - board:
+            to_move: "o"
+            cells:
+              - q: 0
+                r: 0
+                p: "x"
+          time_limit: 5
+          request_id: 1
     
     MoveResponse:
       description: Moves made
@@ -134,5 +175,19 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Move"
+        request_id:
+          description: |
+            The request_id of the move request, echoed unchanged when the request
+            carried one (see "stateless.v1-alpha.request_id").
+          type: integer
+          minimum: 0
       required:
         - move
+      examples:
+        - move:
+            pieces:
+              - q: 1
+                r: 0
+              - q: -1
+                r: 1
+          request_id: 1
