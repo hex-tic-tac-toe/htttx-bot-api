@@ -93,9 +93,7 @@ components:
 
     Move:
       description: |
-        A single move. A move is two placements, except in two cases where it is a
-        single placement: the opening placement at the origin (0, 0), and a placement
-        that wins the game as the first of a pair, which ends the turn early.
+        A single move of two placements.
 
         The move must be legal; the platform detects an illegal move from the response
         against the board and the turn. A move is illegal if it has:
@@ -117,7 +115,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Coord"
-          minItems: 1
+          minItems: 2
           maxItems: 2
         evaluation:
           $ref: "#/components/schemas/PositionEvaluation"
@@ -129,9 +127,6 @@ components:
               r: 0
             - q: -1
               r: 1
-        - pieces:
-            - q: 0
-              r: 0
 
     MoveRequest:
       description: A request for the bot to evaluate the position and make a move.

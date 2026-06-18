@@ -273,9 +273,8 @@ components:
 
     MoveOption:
       description: |
-        A single complete move a bot has evaluated. It is two placements, except in
-        the two single-placement cases described for Move. If evaluation is provided,
-        it must be of the board after this move is applied.
+        A single complete move a bot has evaluated, of two placements. If evaluation
+        is provided, it must be of the board after this move is applied.
 
         The move must be legal; the platform detects an illegal move from the response
         against the board, the turn, and the outstanding request. A move is illegal if
@@ -302,7 +301,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Coord"
-          minItems: 1
+          minItems: 2
           maxItems: 2
         evaluation:
           $ref: "#/components/schemas/PositionEvaluation"
@@ -312,9 +311,6 @@ components:
               r: 0
             - q: -1
               r: 1
-        - pieces:
-            - q: 0
-              r: 0
 
     PositionEvaluation:
       description: |
@@ -339,10 +335,7 @@ components:
 
     Move:
       description: |
-        A single complete move of the game: two placements, except a single placement
-        for the opening at the origin (0, 0) or a placement that wins as the first of a
-        pair (which ends the turn early). A single placement in any other case is
-        under-filled and illegal.
+        A single complete move of the game, of two placements.
       type: object
       required:
         - side
@@ -355,7 +348,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Coord"
-          minItems: 1
+          minItems: 2
           maxItems: 2
       examples:
         - side: "o"
