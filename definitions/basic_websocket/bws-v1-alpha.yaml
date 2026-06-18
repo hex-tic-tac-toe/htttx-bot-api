@@ -137,6 +137,8 @@ components:
             Optional time limit in seconds for the bot to make a move.
             If "basic_websocket.v1-alpha.move_time_limit" is true in the bot's capabilities.json, the client may terminate
             the connection after this amount of time has passed, if the bot didn't respond.
+          type: number
+          minimum: 0
         request_id:
           description: |
             Optional identifier of this move request, assigned by the client. Used for
@@ -232,6 +234,8 @@ components:
             Optional time limit in seconds for the bot to make an evaluation.
             If "basic_websocket.v1-alpha.evaluation_time_limit" is true in the bot's capabilities.json, the client may
             terminate the connection after this amount of time has passed, if the bot didn't respond.
+          type: number
+          minimum: 0
     
     EvaluationResponsePacket:
       description: |
