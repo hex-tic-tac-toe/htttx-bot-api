@@ -101,7 +101,6 @@ components:
         - type
         - side
         - previous
-        - request_id
       properties:
         type:
           type: string
@@ -140,28 +139,23 @@ components:
             the connection after this amount of time has passed, if the bot didn't respond.
         request_id:
           description: |
-            Identifier of this move request, assigned by the client and strictly
-            increasing within a websocket session.
+            Optional identifier of this move request, assigned by the client. Used for
+            answer-matching when the bot sets "basic_websocket.v1-alpha.request_id" and
+            the client supplies it; otherwise answers are matched by the transport's own
+            request/response ordering.
 
-            At most one move request is outstanding at a time: the client sends the
-            next only after the current is answered, interrupted, or abandoned (for
-            example on timeout). dual_sided and free_move_order change which side or
-            position may be requested, not how many are in flight.
+            When used: the value is strictly increasing within the session, and at most
+            one move request is outstanding at a time (the client sends the next only
+            after the current is answered, interrupted, or abandoned). The bot must echo
+            it unchanged on the answering move_response. The outstanding request is the
+            one sent and not yet answered or invalidated (by the next move request, an
+            interrupt, or a game setup packet); the client discards, and does not apply,
+            any move_response whose id is not the outstanding one.
 
-            The bot must echo this id unchanged on the answering move_response. The
-            outstanding request is the one sent and not yet answered or invalidated; it
-            is invalidated by the next move request, an interrupt, or a game setup
-            packet. The client must discard, and never apply, any move_response whose
-            id is not the outstanding one, even if its move is legal; producing such a
-            response is itself an illegal move (see MoveOption).
-
-            request_ids are scoped to one connection: a new connection starts a fresh
-            id space, so an answer from an earlier connection cannot match. A bot may
-            reuse cached evaluation across reconnections but must never reuse or honor
-            an id across connections.
-
-            This is the only answer-matching mechanism for this transport; honoring it
-            is a platform requirement and a server may not implement it yet.
+            request_ids are scoped to one connection: a new connection starts a fresh id
+            space, so an answer from an earlier connection cannot match. A bot may reuse
+            cached evaluation across reconnections but must never reuse or honor an id
+            across connections.
           type: integer
           minimum: 0
       examples:
@@ -182,7 +176,6 @@ components:
       required:
         - type
         - move
-        - request_id
       properties:
         type:
           type: string
@@ -196,12 +189,10 @@ components:
             $ref: "#/components/schemas/MoveOption"
         request_id:
           description: |
-            The outstanding request_id, echoed unchanged from MoveRequestPacket. A
-            response that does not echo it is discarded and never applied to the board;
-            producing such an out-of-id answer (stale, duplicate, or superseded) is an
-            illegal move (see MoveOption). This does not re-decide a play-layer timeout:
-            a late answer to an already-timed-out request is discarded, and whether the
-            timeout ends the game is the play layer's decision.
+            The request_id of the move request this response answers, echoed unchanged.
+            Present when the request carried one (see
+            "basic_websocket.v1-alpha.request_id"). A response that does not echo the
+            outstanding request_id is discarded and not applied to the board.
           type: integer
           minimum: 0
       examples:
@@ -261,10 +252,9 @@ components:
       description: |
         Sent by the client to a bot that declares
         "basic_websocket.v1-alpha.interruptible", asking it to stop evaluating and drop
-        the outstanding move request (including the moves in "previous"). It invalidates
-        the outstanding request_id: after an interrupt the bot must not answer that
-        request, and a move_response that does is an out-of-id illegal move (see
-        MoveOption, MoveRequestPacket.request_id).
+        the outstanding move request (including the moves in "previous"). After an
+        interrupt the bot must not answer that request; a late answer is matched as
+        out-of-id and discarded.
       type: object
       required:
         - type
@@ -272,6 +262,12 @@ components:
         type:
           type: string
           const: interrupt
+        request_id:
+          description: |
+            Optional request_id of the move request being interrupted, when
+            "basic_websocket.v1-alpha.request_id" is in use.
+          type: integer
+          minimum: 0
       examples:
         - type: interrupt
 

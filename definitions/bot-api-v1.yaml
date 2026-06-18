@@ -216,6 +216,14 @@ components:
                     to stop evaluation and ignore the last move request packet, including its "previous" field
                     containing the applied moves.
 
+                request_id:
+                  type: boolean
+                  description: |
+                    If this property is true, the bot supports request_id answer-matching on the move packets.
+                    When set, and the client uses request_ids, every move_request carries a request_id that the bot
+                    must echo on its move_response, and an interrupt may name the request_id it cancels.
+                    When unset, request_id is optional and answers are matched by the transport's request/response ordering.
+
     MatchmakingCapability:
       description: |
         Engine-eligibility marker for ladder / matchmaking use. Its presence declares
